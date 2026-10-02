@@ -1,0 +1,80 @@
+service: netsentinel-ai-backend
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'prod'}
+  environment:
+    GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+    DYNAMODB_KPI_TABLE: ${self:service}-kpis-${self:provider.stage}
+    DYNAMODB_INCIDENT_TABLE: ${self:service}-incidents-${self:provider.stage}
+    TELEMETRY_BUCKET: ${self:service}-telemetry-ingest-${self:provider.stage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+      Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/*"
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:GetObject
+      Resource: "arn:aws:s3:::${self:provider.environment.TELEMETRY_BUCKET}/*"
+
+functions:
+  getKpis:
+    handler: lambda/getKpis.handler
+    events:
+      - http:
+          path: /api/kpis
+          method: get
+          cors: true
+
+  getIncidents:
+    handler: lambda/getIncidents.handler
+    events:
+      - http:
+          path: /api/incidents
+          method: get
+          cors: true
+
+  analyzeNetwork:
+    handler: lambda/analyzeNetwork.handler
+    timeout: 30
+    events:
+      - http:
+          path: /api/analyze
+          method: post
+          cors: true
+
+  health:
+    handler: lambda/health.handler
+    events:
+      - http:
+          path: /api/health
+          method: get
+          cors: true
+
+resources:
+  Resources:
+    KpiTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_KPI_TABLE}
+        AttributeDefinitions:
+          - AttributeName: towerId
+            AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: S
+        KeySchema:
+          - AttributeName: towerId
+            KeyType: HASH
+          - AttributeName: timestamp
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST

@@ -1,0 +1,6 @@
+{
+  "name": "NetSentinel AI - Network Performance & AI Monitoring Copilot",
+  "description": "AI-Powered Network Operations Copilot for real-time 4G/5G KPI monitoring, automated anomaly detection, root-cause diagnostics, and smart incident remediation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
